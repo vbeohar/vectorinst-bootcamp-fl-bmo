@@ -1,0 +1,6 @@
+*.csv
+*.pth
+*.pkl
+.DS_Store
+checkpoints/
+baseline/data/

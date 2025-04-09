@@ -1,0 +1,22 @@
+[project]
+name = "vectorinst-bootcamp-fl-bmo"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "vbeohar",email = "vbeohar@berkeley.edu"}
+]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.10.0,<3.11"
+fl4health = { git = "https://github.com/VectorInstitute/FL4Health.git", branch = "main" }
+peft = "^0.15.1"
+
+
+[tool.poetry]
+packages = [{include = "vectorinst_bootcamp_fl_bmo", from = "src"}]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

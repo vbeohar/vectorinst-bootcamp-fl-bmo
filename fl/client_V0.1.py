@@ -21,18 +21,21 @@ class AMLClient(BasicClient):
     def get_data_loaders(self, config: Config) -> tuple[DataLoader, DataLoader]:
         batch_size = narrow_dict_type(config, "batch_size", int)
         bank_filter = config.get("bank_filter", None)
-        train_loader, val_loader, _ = load_aml_data(self.data_path, batch_size, bank_filter)
+        train_loader, val_loader, _, pos_weight = load_aml_data(self.data_path, batch_size, bank_filter)
+        self.positive_weight = pos_weight  # 💡 Save it for loss
+
         return train_loader, val_loader
 
     def get_test_data_loader(self, config: Config) -> DataLoader | None:
         batch_size = narrow_dict_type(config, "batch_size", int)
         bank_filter = config.get("bank_filter", None)
-        _, _, test_loader = load_aml_data(self.data_path, batch_size, bank_filter)
+        _, _, test_loader, _ = load_aml_data(self.data_path, batch_size, bank_filter)
         return test_loader
 
     def get_criterion(self, config: Config) -> _Loss:
-        positive_weight = config.get("positive_weight", 1.0)
-        pos_weight_tensor = torch.tensor([positive_weight], dtype=torch.float32)
+        # positive_weight = config.get("positive_weight", 1.0)
+        pos_weight_tensor = torch.tensor([getattr(self, 'positive_weight', 1.0)], dtype=torch.float32)
+        # pos_weight_tensor = torch.tensor([positive_weight], dtype=torch.float32)
         return torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor)
 
     def get_optimizer(self, config: Config) -> Optimizer:
@@ -62,7 +65,6 @@ if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     data_path = Path(args.dataset_path)
     # config = {"input_dim": args.input_dim, "batch_size": 1024}
-
 
     client = AMLClient(data_path, [BalancedAccuracy("balanced_accuracy")], device)
     fl.client.start_client(server_address="localhost:8080", client=client.to_client())

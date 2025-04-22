@@ -72,7 +72,11 @@ def load_aml_data(data_path: Path, batch_size: int = 1024, bank_filter: int | No
     df_model = df[features + [target]].dropna()
 
     torch.manual_seed(42) # Added random seed - Arron
-    
+
+    pos_count = (df_model[target] == 1).sum()
+    neg_count = (df_model[target] == 0).sum()
+    pos_weight = min(neg_count / pos_count, 10.0) if pos_count > 0 else 1.0
+
     # Scale features
     scaler = StandardScaler()
     X = scaler.fit_transform(df_model[features])
@@ -100,4 +104,4 @@ def load_aml_data(data_path: Path, batch_size: int = 1024, bank_filter: int | No
     val_dl = DataLoader(val_ds, batch_size=batch_size)
     test_dl = DataLoader(test_ds, batch_size=batch_size)
 
-    return train_dl, val_dl, test_dl
+    return train_dl, val_dl, test_dl, pos_weight #vaib -> return positive weight as well

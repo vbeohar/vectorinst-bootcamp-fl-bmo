@@ -4,6 +4,8 @@ import torch
 import numpy as np
 from torch.utils.data import TensorDataset, DataLoader, random_split
 from pathlib import Path
+from sklearn.model_selection import train_test_split
+
 
 def load_aml_data(data_path: Path, batch_size: int = 1024, bank_filter: int | None = None):
     # Load dataset
@@ -73,9 +75,14 @@ def load_aml_data(data_path: Path, batch_size: int = 1024, bank_filter: int | No
 
     torch.manual_seed(42) # Added random seed - Arron
 
-    pos_count = (df_model[target] == 1).sum()
-    neg_count = (df_model[target] == 0).sum()
-    pos_weight = min(neg_count / pos_count, 10.0) if pos_count > 0 else 1.0
+    # pos_count = (df_model[target] == 1).sum()
+    # neg_count = (df_model[target] == 0).sum()
+    # pos_weight = min(neg_count / pos_count, 10.0) if pos_count > 0 else 1.0
+    positive_weight = (df_model['is_laundering'] == 0).sum() / (df_model['is_laundering'] == 1).sum()
+    print('poswt calculated ----> : ', positive_weight)
+    # positive_weight = min(positive_weight, 10.0) 
+    # print('after scaling down poswt: ', positive_weight)
+    pos_weight_tensor = torch.tensor([positive_weight], dtype=torch.float32)
 
     # Scale features
     scaler = StandardScaler()
@@ -90,18 +97,32 @@ def load_aml_data(data_path: Path, batch_size: int = 1024, bank_filter: int | No
     X_tensor = torch.tensor(X, dtype=torch.float32)
     y_tensor = torch.tensor(y, dtype=torch.float32)
 
-    dataset = TensorDataset(X_tensor, y_tensor)
+    # dataset = TensorDataset(X_tensor, y_tensor)
 
-    # Train/Val/Test split
-    train_size = int(0.6 * len(dataset))
-    val_size = int(0.2 * len(dataset))
-    test_size = len(dataset) - train_size - val_size
+    # # Train/Val/Test split
+    # train_size = int(0.6 * len(dataset))
+    # val_size = int(0.2 * len(dataset))
+    # test_size = len(dataset) - train_size - val_size
 
-    generator = torch.Generator().manual_seed(42)
-    train_ds, val_ds, test_ds = random_split(dataset, [train_size, val_size, test_size], generator=generator)
+    # generator = torch.Generator().manual_seed(42)
+    # train_ds, val_ds, test_ds = random_split(dataset, [train_size, val_size, test_size], generator=generator)
+
+    # -------- Stratified Split starts here --------
+    X_train, X_temp, y_train, y_temp = train_test_split(
+        X_tensor, y_tensor, test_size=0.4, random_state=42, stratify=y_tensor
+    )
+
+    X_val, X_test, y_val, y_test = train_test_split(
+        X_temp, y_temp, test_size=0.5, random_state=42, stratify=y_temp
+    )
+
+    train_ds = TensorDataset(X_train, y_train)
+    val_ds = TensorDataset(X_val, y_val)
+    test_ds = TensorDataset(X_test, y_test)
+
 
     train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
     val_dl = DataLoader(val_ds, batch_size=batch_size)
     test_dl = DataLoader(test_ds, batch_size=batch_size)
 
-    return train_dl, val_dl, test_dl, pos_weight #vaib -> return positive weight as well
+    return train_dl, val_dl, test_dl, pos_weight_tensor #vaib -> return positive weight as well

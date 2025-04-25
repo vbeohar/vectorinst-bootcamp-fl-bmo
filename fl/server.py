@@ -7,7 +7,7 @@ from flwr.common.typing import Config
 from flwr.server.client_manager import SimpleClientManager
 from flwr.server.strategy import FedAvg
 
-from fl.aml_model import AMLNet
+from fl.aml_model_V01 import AMLNet
 from fl4health.checkpointing.checkpointer import BestLossTorchModuleCheckpointer, LatestTorchModuleCheckpointer
 from fl4health.checkpointing.server_module import BaseServerCheckpointAndStateModule
 from fl4health.parameter_exchange.full_exchanger import FullParameterExchanger
@@ -48,8 +48,8 @@ def main(config: dict[str, Any]) -> None:
     # To facilitate checkpointing
     parameter_exchanger = FullParameterExchanger()
     checkpointers = [
-        BestLossTorchModuleCheckpointer(config["checkpoint_path"], "best_model.pkl"),
-        LatestTorchModuleCheckpointer(config["checkpoint_path"], "latest_model.pkl"),
+        BestLossTorchModuleCheckpointer(config["checkpoint_path"], "best_model_fedavg.pkl"),
+        LatestTorchModuleCheckpointer(config["checkpoint_path"], "latest_model_fedavg.pkl"),
     ]
     checkpoint_and_state_module = BaseServerCheckpointAndStateModule(
         model=model, parameter_exchanger=parameter_exchanger, model_checkpointers=checkpointers

@@ -14,7 +14,7 @@ from fl4health.utils.config import narrow_dict_type
 from fl4health.utils.metrics import Accuracy, BalancedAccuracy
 from fl4health.utils.config import load_config
 
-from fl.aml_model import AMLNet  # Your model # -Arron please add fl. back
+from fl.aml_model_V01 import AMLNet  # Your model # -Arron please add fl. back
 from fl.load_aml_data_V01 import load_aml_data
 
 class AMLClient(BasicClient):
@@ -34,9 +34,12 @@ class AMLClient(BasicClient):
 
     def get_criterion(self, config: Config) -> _Loss:
         # positive_weight = config.get("positive_weight", 1.0)
-        pos_weight_tensor = torch.tensor([getattr(self, 'positive_weight', 1.0)], dtype=torch.float32)
+        # pos_weight_tensor = torch.tensor([getattr(self, 'positive_weight', 1.0)], dtype=torch.float32)
         # pos_weight_tensor = torch.tensor([positive_weight], dtype=torch.float32)
-        return torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor)
+        # return torch.nn.BCEWithLogitsLoss(pos_weight=[getattr(self, 'positive_weight', 1.0)])
+        positive_weight_value = getattr(self, 'positive_weight', 1.0)
+        pos_weight_tensor = torch.tensor([positive_weight_value], dtype=torch.float32).to(self.device)
+        return torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor)        
 
     def get_optimizer(self, config: Config) -> Optimizer:
         return torch.optim.Adam(self.model.parameters(), lr=1e-3, weight_decay=1e-4)

@@ -10,3 +10,6 @@ batch_size: 32 # The batch size for client training
 
 # checkpointing
 checkpoint_path: "fl/checkpoints/"
+
+# Downsampling settings per client
+downsampling_ratio: 1.0 # percentage of original MNIST data to keep for minority numbers

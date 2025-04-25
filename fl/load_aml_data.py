@@ -38,7 +38,7 @@ def load_aml_data(data_path: Path, batch_size: int = 1024, bank_filter: int | No
     }, inplace=True) 
 
     if bank_filter is not None: # Filter by from_bank if needed -- vaibhav edit 
-        df = df[df["from_bank"] == bank_filter]    
+        df = df[(df["from_bank"] == bank_filter) | (df["to_bank"] == bank_filter)]
 
     # Time-based features
     df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
@@ -47,19 +47,35 @@ def load_aml_data(data_path: Path, batch_size: int = 1024, bank_filter: int | No
     df['tx_month'] = df['timestamp'].dt.month
 
     # Encode categorical fields
-    for col in ['from_bank', 'to_bank', 'payment_format', 'receiving_currency', 'payment_currency']:
+    from sklearn.preprocessing import LabelEncoder
+
+    # Encode categorical fields
+    for col in ['payment_format', 'receiving_currency', 'payment_currency']:
         df[col] = LabelEncoder().fit_transform(df[col].astype(str))
+
+    # # One-hot encode categorical fields - Arron
+    # categorical_cols = ['payment_format', 'receiving_currency', 'payment_currency'] # Removed from bank and to bank as discussed
+    # df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
+
+    # # Dynamically get the names of the dummy variables - Arron
+    # dummy_columns = [col for col in df.columns if any(prefix in col for prefix in categorical_cols)]
 
     # Feature set
     features = [
         'amount_received', 'amount_paid', 'tx_hour', 'tx_day', 'tx_month',
         'payment_format', 'currency_change', 'self_to_self',
-        'receiving_currency', 'payment_currency'
+        'receiving_currency', 'payment_currency', # Removed from bank and to bank as discussed
     ] # Can add from_bank, to_bank if needed
     target = 'is_laundering'
 
     # Drop missing values
     df_model = df[features + [target]].dropna()
+
+    torch.manual_seed(42) # Added random seed - Arron
+
+    pos_count = (df_model[target] == 1).sum()
+    neg_count = (df_model[target] == 0).sum()
+    pos_weight = neg_count / pos_count # Arron - removing min 10 pos weight
 
     # Scale features
     scaler = StandardScaler()
@@ -88,4 +104,4 @@ def load_aml_data(data_path: Path, batch_size: int = 1024, bank_filter: int | No
     val_dl = DataLoader(val_ds, batch_size=batch_size)
     test_dl = DataLoader(test_ds, batch_size=batch_size)
 
-    return train_dl, val_dl, test_dl
+    return train_dl, val_dl, test_dl, pos_weight #vaib -> return positive weight as well

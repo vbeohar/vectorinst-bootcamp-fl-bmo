@@ -15,7 +15,7 @@ from fl4health.utils.metrics import Accuracy, BalancedAccuracy
 from fl4health.utils.config import load_config
 
 from fl.aml_model import AMLNet  # Your model # -Arron please add fl. back
-from fl.load_aml_data import load_aml_data
+from fl.load_aml_data_V01 import load_aml_data
 
 class AMLClient(BasicClient):
     def get_data_loaders(self, config: Config) -> tuple[DataLoader, DataLoader]:
